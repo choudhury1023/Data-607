@@ -1,0 +1,39 @@
+---
+title: "607 Assignment 1"
+author: "Ahsanul Choudhury"
+date: "September 9, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r library, include=TRUE}
+library(RMySQL)
+```
+
+```{r connect_database, include=TRUE}
+mydb = dbConnect(MySQL(), user='root', password='', dbname='movieratings', host='localhost')
+```
+
+```{r drop_table, include=TRUE}
+dbSendQuery(mydb,"
+DROP TABLE IF EXISTS MovieRatings;")
+```
+
+```{r create_table, include=TRUE}
+dbSendQuery(mydb,"
+CREATE TABLE MovieRatings AS
+(SELECT c.rate_id AS 'Rating ID', a.m_name AS 'Movie', b.r_name AS 'Rater', c.rating AS 'Ratings'
+FROM Ratings AS c
+LEFT JOIN Movies AS a ON c.m_id = a.m_id
+LEFT JOIN Raters AS b ON c.r_id = b.r_id);")
+```
+
+```{r view_table, include=TRUE}
+tb = dbSendQuery(mydb, "select * from MovieRatings")
+data = fetch(tb, n=-1)
+data
+```
