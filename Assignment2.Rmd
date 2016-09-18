@@ -1,0 +1,156 @@
+---
+title: "607 Week3"
+author: "Ahsanul Choudhury"
+date: "September 18, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#required Library
+```{r library, include=TRUE}
+library(stringr)
+```
+
+
+##3. Copy the introductory example. The vector name stores the extracted names.
+
+##Load Data
+```{r load_data, include=TRUE}
+raw.data <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+name
+```
+
+
+##(a)Use the tools of this chapter to rearrnge the vector so that all elements conform to the standard first_name last_name'
+
+##Remove Title
+```{r Remove1, include=TRUE}
+noTitle <- unlist(str_replace(name,"[[:alpha:]]{2,}[.]",""))
+noTitle
+```
+
+##Remove Second Name
+```{r remove2, include=TRUE}
+noSecName <- unlist(str_replace(noTitle,"[[:alpha:]]{1}[.]",""))
+noSecName
+```
+
+##Extracting First Name
+```{r First_name, include=TRUE}
+firstName <- unlist(str_extract(noSecName,"[[:alpha:]]{2,}[[:space:]]{1,}|[[:punct:]][[:space:]]{1,}[[:alpha:]]{2,}"))
+firstName <- unlist(str_replace(firstName,"[[:punct:]][[:space:]]",""))
+firstName
+```
+
+
+#Extracting Last Name
+```{r last_name, include=TRUE}
+lastName <- unlist(str_extract(noSecName,"[^[:punct:]][[:space:]][[:alpha:]]{2,}|[[:alpha:]]{2,}[[:punct:]]"))
+lastName <- unlist(str_replace(lastName,"[[:alpha:]][[:space:]]", ""))
+lastName <- unlist(str_replace(lastName,"[[:punct:]]", ""))
+lastName
+```
+##For first names and last names I was having trobule with mixing characters and punctuations, used str_replace function to clean up the data.
+
+##Rearrange
+```{r rearrange, include=TRUE}
+paste(firstName, lastName)
+data.frame(firstName, lastName)
+```
+
+
+##(b)Construct a logical vector indicating whether a character has a title(i.e., Rev. and Dr.).
+
+##Title has more than 2 alphabet and ends with"."
+```{r title, include=TRUE}
+title <- unlist(str_detect(name,"[[:alpha:]]{2,}[.]"))
+title
+df1 <- data.frame(name,title)
+df1
+```
+
+
+##(c)Construct a logical vector indicating whether a character has a second name.
+
+##Second Name
+```{r 2ndName, include=TRUE}
+secName <- unlist(str_detect(noTitle,"[[:alpha:]]{1,}[.]"))
+secName
+df2 <- data.frame(name,secName)
+df2
+```
+
+
+
+##Describe the types of strings that conform to the following regular expressions and construct and example that is matched by regular expression.
+
+##(a)[0-9]+\\$
+
+##The above regular expression looking for numbers 0 to and ends with $.
+```{r sol1, include=TRUE}
+sol1 <- c("124$", "$124", "a2b$", "16$cb")
+sol1 <- unlist(str_detect(sol1, "[0-9]+\\$"))
+sol1
+```
+
+##(b)\\b[a-z]{1,4}\\b
+
+##This regular expression will extract data containing blank followed by 1 to four lower case letters followed by blank.
+```{r sol2, include=TRUE}
+sol2 <- c("abcdf", "ghij", "KLMN", "6542", "opqr 23")
+sol2 <- unlist(str_extract(sol2, "\\b[a-z]{1,4}\\b"))
+sol2
+```
+
+##(c).*?\\.txt$
+##This regular expression will look for files ends in .txt
+```{r sol3, include=TRUE}
+sol3 <- c("ahs.rtxt", "123asd.txt", "txt.r")
+sol3 <- unlist(str_extract(sol3, ".*?\\.txt$"))
+sol3
+```
+
+##(d)\\d{2}/\\d{2}\\d{4}
+##This regular expression is looking for two numbers followed by a forward slash followed by two numbers followed by a forward slash followed by 4 numbers, most likely a date format.
+```{r sol4, include=TRUE}
+sol4 <- c("09/24/1979", "mm/dd/yyyy", "23/sept/1979")
+sol4 <- unlist(str_extract(sol4, "\\d{2}/\\d{2}/\\d{4}"))
+sol4
+```
+
+##(e)<(.+?)>.+?</\\1>
+##This regular expression will look for html tags
+```{r sol5, include=TRUE}
+sol5 <- c("<tag>cuny msda</tag>", "<tag>Assingnment2<tag>", "www.cuny.com")
+sol5 <- unlist(str_extract(sol5, "<(.+?)>.+?</\\1>"))
+sol5
+```
+
+
+
+##9.The following code hides a secret message. Crack it with R and regular expressions.
+
+##Load Hidden message
+```{r hMessage, include=TRUE}
+hMessage <- c("clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0TanwoUwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO
+d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5
+fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr")
+```
+##Upper cases are more revealing than the others and "." used as word sepatators
+
+
+##Extract characters
+```{r characters, include=TRUE}
+message <- unlist(str_extract_all(hMessage, "[[:upper:].]{1,}"))
+message
+```
+
+##Join and Replace "." with space
+```{r message, include=TRUE}
+message <- str_replace_all(paste(message, collapse = ''), "[.]", " ")
+message
+```
