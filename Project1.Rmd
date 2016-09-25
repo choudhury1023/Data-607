@@ -1,0 +1,160 @@
+---
+title: "607 Project1"
+author: "Ahsanul Choudhury"
+date: "September 23, 2016"
+output: html_document
+---
+
+##The purpose 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##The goal of this project is to create a .CSV file from a given text file with text tournament result, the .CSV file will include : Player's Name, Player's State, Total Number of Points, Player's Pre-Rating, and Average Pre Chess Rating of Opponents. The text file can be found at: "https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/tournamentinfo.txt"
+
+
+##Step 1: Install packages
+```{r install_packages, include=TRUE}
+##install.packages("stringr")
+##install.packages("sqldf")
+```
+
+##Step 2: Load packages
+```{r library, include=TRUE}
+library(stringr)
+library(sqldf)
+```
+
+##Step 3: Load file
+```{r load_data, include=TRUE}
+tourdata <- read.csv("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/tournamentinfo.txt")
+head(tourdata)
+```
+
+##Step 4: Delete header information from text file
+```{r delete_header, include=TRUE}
+tourdata <- tourdata[-c(1,2),]
+head(tourdata)
+```
+
+##Step 6: Remove row separators
+```{r remove_sep, include=TRUE}
+tourdata <- str_replace_all(tourdata, "-{2,}", "")
+head(tourdata)
+```
+
+##Step 7: Remove blank rows that was generated after removing separators
+```{r remove_blank, include=TRUE}
+tourdata <- tourdata[tourdata  != ""]
+head(tourdata)
+```
+
+##Step 8: The data contains two lines for each row, break the rows at line break and create two tables 
+```{r split_tables, include=TRUE}
+oddRows<-seq(1,127,2)
+evenRows<-seq(2,128,2)
+
+tourdata1 <- tourdata[c(oddRows)]
+head(tourdata1)
+
+tourdata2 <- tourdata[c(evenRows)]
+head(tourdata2)
+```
+
+##Step 9: Get "x" numbers for table1
+```{r num_table1, include=TRUE}
+tourdata11 <- data.frame( do.call( rbind, strsplit(tourdata1, "|" ) ) ) 
+head(tourdata11,1)
+```
+
+##Step 10: Extract required data from table1 using "x" numbers and "substr" function
+```{r table1, include=TRUE}
+tourdata1 <- data.frame(playerNum   = as.numeric(substr(tourdata1, 1,  6)),
+                         playerName  = str_trim(substr(tourdata1, 8,  40)),
+                         total_pts    = as.numeric(substr(tourdata1, 42, 46)),
+                         r1OppID       = substr(tourdata1, 50, 52),
+                         r2OppID       = substr(tourdata1, 56, 58),
+                         r3OppID       = substr(tourdata1, 62, 64),
+                         r4OppID       = substr(tourdata1, 68, 70),
+                         r5OppID       = substr(tourdata1, 74, 76),
+                         r6OppID       = substr(tourdata1, 80, 82),
+                         r7OppID       = substr(tourdata1, 86, 88), stringsAsFactors=FALSE)
+head(tourdata1)
+```
+
+##Step 11: Get "x" numbers for table2
+```{r num_tab2, include=TRUE}
+tourdata12 <- data.frame( do.call( rbind, strsplit(tourdata2, "|" ) ) ) 
+head(tourdata12,1)
+```
+
+##Step 12: Extract required data from table2 using "x" numbers and "substr" function
+```{r table2, include=TRUE}
+tourdata2 <- data.frame(state = substr(tourdata2, 1, 6),
+                        uscfID = substr(tourdata2, 8, 17),
+                        preTRating = as.numeric(substr(tourdata2, 23, 26)),
+                        postTRating = as.numeric(substr(tourdata2, 32, 35)),
+stringsAsFactors=FALSE)
+head(tourdata2)
+```
+
+##Step 13: Combine table1 and table2 to create single table
+```{r table, include=TRUE}
+ctable <- cbind(tourdata1,tourdata2)
+head(ctable)
+```
+
+##Step 14: Match opponent number with their respective pre rating
+```{r match_opp, include=TRUE}
+df1 <- sqldf("SELECT a.playerNum, b.preTRating AS 'r1OppRating'
+FROM tourdata1 AS a
+LEFT JOIN ctable AS b ON a.r1OppID = b.playerNum;")
+df2 <- sqldf("SELECT b.preTRating AS 'r2OppRating'
+FROM tourdata1 AS a
+LEFT JOIN ctable AS b ON a.r2OppID = b.playerNum;")
+df3 <- sqldf("SELECT b.preTRating AS 'r3OppRating'
+FROM tourdata1 AS a
+LEFT JOIN ctable AS b ON a.r3OppID = b.playerNum;")
+df4 <- sqldf("SELECT b.preTRating AS 'r4OppRating'
+FROM tourdata1 AS a
+LEFT JOIN ctable AS b ON a.r4OppID = b.playerNum;")
+df5 <- sqldf("SELECT b.preTRating AS 'r5OppRating'
+FROM tourdata1 AS a
+LEFT JOIN ctable AS b ON a.r5OppID = b.playerNum;")
+df6 <- sqldf("SELECT b.preTRating AS 'r6OppRating'
+FROM tourdata1 AS a
+LEFT JOIN ctable AS b ON a.r6OppID = b.playerNum;")
+df7 <- sqldf("SELECT b.preTRating AS 'r7OppRating'
+FROM tourdata1 AS a
+LEFT JOIN ctable AS b ON a.r7OppID = b.playerNum;")
+```
+
+##Step 15: Collect all the opponent pre ratings on a single table
+```{r opp_rating, include=TRUE}
+oppRating <- cbind(df1,df2,df3,df4,df5,df6,df7)
+head(oppRating)
+```
+
+##Step 16: Calculate opponent's average pre rating
+```{r ave_opprating, include=TRUE}
+aveOppRating <- round(rowMeans(oppRating[,2:8],na.rm=TRUE),0)
+aveOppRating
+```
+
+##Step 17: Create final tabel with requird information
+```{r final_table, include=TRUE}
+finalData <- data.frame(ctable$playerNum, ctable$playerName, ctable$state, ctable$total_pts, ctable$preTRating, aveOppRating)
+names(finalData) <- c("player_number", "player_name", "state", "total_points", "pre_rating", "ave_opponent_rating")
+```
+
+##Step 18: Write .CSV file
+```{r csv_file, include=TRUE}
+write.csv(finalData, "Chess_Tounament.csv", row.names=FALSE)
+```
+
+##Step 19: Load .CSV file
+```{r load_csv, include=TRUE}
+csv <- read.csv("Chess_Tounament.csv")
+csv
+```
