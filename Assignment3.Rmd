@@ -1,0 +1,173 @@
+---
+title: "Week 5 Assignment"
+author: "Ahsanul Choudhury"
+date: "October 2, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Step 1: Install packages
+```{r install_packages, include=TRUE}
+##install.packages("sqldf")
+##install.packages("dplyr")
+##install.packages("tidyr")
+##install.packages("ggplot2")
+```
+
+##Step 2: Load packages
+```{r library, include=TRUE}
+library(sqldf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+##Step 3: Create databse
+
+##Four Tables were created for the databse, "airlines" table containing airline information, "destination" table contining destination information, "on_time" table contaning on time flights information and finally "delayed" table contaning delyed flight information
+```{r database, include=TRUE}
+airlines <- sqldf(c("DROP TABLE IF EXISTS airlines",
+                   "CREATE TABLE airlines(
+                   a_id INT NOT NULL,
+                   a_name VARCHAR(100) NOT NULL,
+                   PRIMARY KEY (a_id))",
+                   "INSERT INTO airlines (a_id, a_name) VALUES (001, 'ALASKA'),                       (002, 'AMWEST');",
+                   "SELECT * FROM airlines"))
+airlines
+
+destination <- sqldf(c("DROP TABLE IF EXISTS destination",
+                   "CREATE TABLE destination(
+                   d_id INT NOT NULL,
+                   d_name VARCHAR(100) NOT NULL,
+                   PRIMARY KEY (d_id))",
+                   "INSERT INTO destination (d_id, d_name) VALUES 
+                    (001, 'Los Angeles'), (002, 'Phoenix'), (003, 'San Diego'),                       (004, 'San Francisco'), (005, 'Seattle');",
+                   "SELECT * FROM destination"))
+destination
+
+on_time <- sqldf(c("DROP TABLE IF EXISTS on_time",
+                   "CREATE TABLE on_time(
+                   ot_id INT NOT NULL,
+                   a_id INT NOT NULL,
+                   d_id INT NOT NULL,
+                   ot_num INT NOT NULL,
+                   PRIMARY KEY (ot_id))",
+                   "INSERT INTO on_time (ot_id, a_id, d_id, ot_num) VALUES
+                   (001, 001, 001, 497), (002, 001, 002, 221), 
+                   (003, 001, 003, 212), (004, 001, 004, 503),
+                   (005, 001, 005, 1841), (006, 002, 001, 694),
+                   (007, 002, 002, 4840), (008, 002, 003, 383),
+                   (009, 002, 004, 320), (010, 002, 005, 201);",
+                   "Select * FROM on_time"))
+on_time
+
+delayed <- sqldf(c("DROP TABLE IF EXISTS delayed",
+                   "CREATE TABLE delayed(
+                   del_id INT NOT NULL,
+                   a_id INT NOT NULL,
+                   d_id INT NOT NULL,
+                   del_num INT NOT NULL,
+                   PRIMARY KEY (del_id))",
+                   "INSERT INTO delayed (del_id, a_id, d_id, del_num) VALUES
+                   (001, 001, 001, 62), (002, 001, 002, 12), 
+                   (003, 001, 003, 20), (004, 001, 004, 102),
+                   (005, 001, 005, 305), (006, 002, 001, 117),
+                   (007, 002, 002, 415), (008, 002, 003, 65),
+                   (009, 002, 004, 129), (010, 002, 005, 61);",
+                   "Select * FROM delayed"))
+delayed
+```
+
+##Step 4: Create Wide format Data
+
+##Wide forma table was created by using dplyr and tidyr
+```{r wide_format, include=TRUE}
+##Long format table containing "on time" flight information only
+tab1 <- left_join(destination, on_time)
+tab3 <- left_join(airlines,tab1 )
+tab_ot <- select(tab3, Airlines = a_name, Destination = d_name, on_time = ot_num)
+tab_ot
+
+##Long format table containing "delayed" flight information only
+tab2 <- left_join(destination, delayed)
+tab4 <- left_join(airlines, tab2)
+tab_del <- select(tab4, Airlines = a_name, Destination = d_name, Delayed = del_num)
+tab_del
+
+##Long format table contining "on time" flight information converted to wide format
+wide_data1 <- spread(tab_ot, Destination, on_time)
+wide_data1
+
+##Long format table contining "delayed" flight information converted to wide format
+wide_data2 <- spread(tab_del, Destination, Delayed)
+wide_data2
+
+##Wide format table were combined, added "status" column and data rearranged
+wide_data <- bind_rows(wide_data1, wide_data2)
+
+Status <- c("on_time", "on_time", "delayed", "delayed")
+
+wide_datas <- mutate(wide_data, Status )
+
+wide_dataar <- arrange(wide_datas, Airlines)
+
+wide_dataf <- wide_dataar[c(1,7,2,3,4,5,6)]
+wide_dataf
+```
+
+##Step 5: Write .CSV file
+```{r csv_file, include=TRUE}
+write.csv(wide_dataf, "Airlines.csv", row.names=FALSE)
+```
+
+##.CSV file was uploaded to Github
+
+##Step 6: Load .CSV from Github
+```{r load_data, include=TRUE}
+airline_data <- read.csv("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/Airlines.csv")
+airline_data
+```
+
+##Step 7: Tidy data
+```{r tidy_data, include=TRUE}
+##Converted data to long fromat to transfor and analyze
+long_data <- gather(airline_data, "Destination", "Num", 3:7)
+long_data1 <- spread(long_data, Status, Num)
+long_data1
+```
+
+##Step 8: Transform data
+```{r transform_data, include=TRUE}
+##Added two new columns using mutate function, the two new columns gives us information about total number of flight by destination and percent of delayed flight to that destinaton
+long_data2 <- mutate(long_data1, total_flights = delayed + on_time)
+long_data3 <- mutate(long_data2 ,percent_delayed = round(delayed * 100 / total_flights, 2))
+long_data3
+```
+
+##Step 9: Plot transformed data
+```{r plot1, include=TRUE}
+ggplot(data = long_data3, aes(x = Destination, y = percent_delayed, fill = Airlines)) + geom_bar(stat="identity", position="dodge") + ggtitle("Percentage of Arrival Delays By Destination") + ylab("Percentage of Planes Delayed By Destination")
+```
+
+
+##Step 10: More transformation
+```{r transform_more, include=TRUE}
+long_data4 <- group_by(long_data3, Airlines)
+long_data4
+long_data5 <-summarise(long_data4, total_flights_alldest = sum(total_flights), delayed_alldest = sum(delayed))
+long_data5
+long_data6 <- mutate(long_data5, pct_delayed_alldest = round((delayed_alldest / total_flights_alldest) * 100, 2))
+long_data6
+```
+
+##Step 11: Another plot
+```{r plot2, include=TRUE}
+ggplot(data = long_data6, aes(x = Airlines, y= pct_delayed_alldest, fill = Airlines)) + geom_bar(stat = "identity", position = "dodge") + ggtitle("Percentage of Arrival Delays All Destination") + ylab("All Destination Delay Rate")
+```
+
+
+
+## The two plots above points us towards two diffrent conclusions, if we look at first plot where it shows the arrival delay percentage by individual destination it seems Alaska performs better than AMWEST, but if we look at the second plot which shows combined percentage of arrival delays to all destination AMWEST perfoms better than Alaska, which is rather confusing. But if we look into the data we can see AMWEST operates majority of its flight to Phoenix which the lowest percentage of arrival delays for both airlines where as Alaska operates majority of its flight to San Francisco which has the second highest arrival delays after Seattle for both airlines. This indicates there other variable at work beside the Airlines like air traffic and weather.
