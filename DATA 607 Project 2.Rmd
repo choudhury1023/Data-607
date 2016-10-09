@@ -1,0 +1,265 @@
+---
+title: "DATA 607 Project 2"
+author: "Ahsanul Choudhury"
+date: "October 7, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Install packages
+```{r install_packages, include=TRUE}
+##install.packages("dplyr")
+##install.packages("tidyr")
+##install.packages("ggplot2")
+```
+
+##Load packages
+```{r library, include=TRUE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+##Dataset 1
+
+##Engilsh Premier League Data, Source Provided by Ravi Kothari
+##Source: http://www.soccerstats.com/widetable.asp?league=england
+
+
+##objective: To find if there is any home advantage during a match by analyzing home and away goals
+
+##.csv was created and uploaded to Github
+
+##Load data
+```{r load_data3, include=TRUE}
+epl <- read.csv("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/epl_data.csv", header = TRUE, stringsAsFactors = FALSE)
+epl
+```
+
+##Find Column Names
+```{r names_epl, include=TRUE}
+names(epl)
+```
+
+##Select required columns and rename
+```{r select_epl, include=TRUE}
+epl1<- epl %>%
+select(Team, GFh, GAh, GFa, GAa) %>%
+rename(team = Team, goal_for_home = GFh, goal_against_home = GAh, goal_for_away = GFa, goal_against_away = GAa)
+epl1
+```
+
+
+##Summary analysis
+```{r summary_epl, include=TRUE}
+summary(epl1)
+```
+
+
+##Tidy data, convert form wide to long
+```{r tidy_epl, include=TRUE}
+epl_tidy <- gather(epl1,"type", "goals", 2:5)
+epl_tidy
+```
+
+##Plot all "for" and "against" goal for both home and away match
+```{r plot1, include=TRUE}  
+ggplot(data = epl_tidy, aes(x = team, y = goals, fill = type))+ geom_bar(stat="identity", position="dodge") + ggtitle("Home and Away Goals") + ylab("Goals") + coord_flip()
+##unable to reach a conclusion from the plot, further analysis required
+```  
+
+##Seperate "for" goals from "against" and create new tables
+
+##"for" table for both home and away match with percent scored at home
+```{r pct_hf_team, include=TRUE} 
+epl_pct_home_for <- epl1 %>% 
+    select(team, total_for_home = sum(goal_for_home), total_for_away = sum(goal_for_away))  %>% 
+  mutate(pct_for_home = round(( total_for_home/ (total_for_home + total_for_away)) * 100))
+epl_pct_home_for
+```
+
+##Summary of the "for" table
+```{r summary1, include=TRUE} 
+summary(epl_pct_home_for)
+nrow(filter(epl_pct_home_for, pct_for_home > 50))
+##8 teams out of 20 scores more than 50% of the goals at home with one team scoring all their goals at home
+```
+
+##Plot percentage of "for"" scored goal at home
+```{r plot2, include=TRUE}  
+ggplot(data = epl_pct_home_for, aes(x = team, y = pct_for_home, fill = pct_for_home))+ geom_bar(stat="identity", position="dodge") + ggtitle("For Home Goal Percentage") + ylab("Percent")+ coord_flip()
+```
+
+##percentage of total "for" goal scored at home by all team
+```{r pct_hf_total, include=TRUE}
+epl_total_pct_home_for <- epl1 %>% 
+    summarise(total_for_home = sum(goal_for_home), total_for_away = sum(goal_for_away))  %>% 
+  mutate(pct_for_home = round(( total_for_home/ (total_for_home + total_for_away)) * 100))
+epl_total_pct_home_for
+##53% of the total "for" goals were scored at home
+```
+
+##"against" table for both home and away match with percent conceded at home
+```{r pct_ha_team, include=TRUE}
+epl_pct_home_against <- epl1 %>% 
+    select(team, total_against_home = sum(goal_against_home), total_against_away = sum(goal_against_away))  %>% 
+  mutate(pct_against_home = round(( total_against_home/ (total_against_home + total_against_away)) * 100))
+epl_pct_home_against
+```
+
+##Summary of the "against" table
+```{r summary2, include=TRUE} 
+summary(epl_pct_home_against)
+nrow(filter(epl_pct_home_against, pct_against_home < 50))
+##10 out of 20 or 50% of the teams conceded less than 50% of the goals at home
+```
+
+##Plot percentage of "against" goal conceded at home
+```{r plot3, include=TRUE}  
+ggplot(data = epl_pct_home_against, aes(x = team, y = pct_against_home, fill = pct_against_home))+ geom_bar(stat="identity", position="dodge") + ggtitle("For Home Goal Percentage") + ylab("Percent")+ coord_flip()
+```
+
+```{r pct_ha_total, include=TRUE}
+epl_total_pct_home_against <- epl1 %>% 
+    summarise(total_against_home = sum(goal_against_home), total_against_away = sum(goal_against_away))  %>% 
+  mutate(pct_against_home = round(( total_against_home/ (total_against_home + total_against_away)) * 100))
+epl_total_pct_home_against
+##47% of the against goals were conceded at home
+```
+##conclusion: From the data set we can not reach to a strong conclusion that playing at home has significant advatage for the home team
+
+
+
+
+##Dataset 2
+
+##Citizenship provided by regions, source provided by Jose Zuniga
+##[Source: Tips for Simplifying Crosstab Query Statements, Rob Gravelle, Database Journal, 2010}
+
+##Objective: to compare monthly citizenship for the given regions
+
+##.csv was created and uploaded to Github
+
+##Load Data
+```{r load_data1, include=TRUE}
+citizenship <- read.csv("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/monthly_citizenship.csv", header = TRUE, stringsAsFactors = FALSE)
+citizenship
+```
+
+##Tidy wide format data and convert to long format
+```{r tidy_dat1, include=TRUE}
+tidy_citizenship <- citizenship %>%
+  gather("region","month_total",2:6) %>%
+  select(Month, region, month_total,TOTAL)
+tidy_citizenship
+```
+
+##Making Month an ordered factor so that ggplot does not rearrnge
+```{r ordered_factor1, include=TRUE}
+tidy_citizenship$Month <- factor(tidy_citizenship$Month, levels = tidy_citizenship$Month)
+```
+
+##Plot data
+```{r plot4, include=TRUE}
+ggplot(data = tidy_citizenship, aes(x = region, y = month_total, fill = Month))+ geom_bar(stat="identity", position="dodge") + ggtitle("Citizenship by Month") + ylab("Citizenship")
+```
+
+##Region 3 issues the most citizenzip by far and region 4 issues the least.
+
+##Another plot
+```{r plot5, include=TRUE}
+ggplot(data = tidy_citizenship, aes(x = Month, y = TOTAL, fill = month_total)) + geom_bar(stat="identity", position="dodge") + ggtitle("Citizenship by Month") + ylab("Citizenship")
+```
+
+##Citizenship issuance is consitant in all five region troughout the given month hovering aroud 420 to 533 with the exception of month of April where citizenship issuance was the least (171).
+
+
+
+
+##Dataset 3
+
+##Income by Religion, source provided by Marco Siqueira Campos
+##Source: http://www.pewforum.org/religious?landscape?study/incomedistribution/
+
+##Objective: Analyse the income by religion
+
+##.csv was created and uploaded to Github
+
+##Load Data
+```{r load_data2, include=TRUE}
+income <- read.csv("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/Income_distribution_by_religious_group.csv", header = TRUE, stringsAsFactors = FALSE)
+income
+```
+
+##Get names of the column
+```{r names, include=TRUE}
+names(income)
+```
+
+##Rename Columns
+```{r rename1, include=TRUE}
+income1 <-rename(income, religion = Religious.tradition,smple_size = Sample.Size)
+income1
+names(income1)[2] <- "<30k"
+names(income1)[3] <- "30k-49,999"
+names(income1)[4] <- "50k-99.999"
+names(income1)[5] <- "100k+"
+income1
+##I was having problem renaming the column using dplyr, so had use basic r function for part of the renaming
+```
+
+##Tidy data, convert from long format and getting rid of "%" symbol
+```{r tidy_data2, include=TRUE}
+tidy_income <- income1 %>%
+gather("income_bracket", "percentage_raw", 2:5 )%>%
+mutate(percentage = as.numeric(gsub("%", "", percentage_raw)))%>%
+select(religion, income_bracket, percentage)
+tidy_income
+```
+
+
+##Making income_bracket an ordered factor so that ggplot does not rearrnge
+```{r ordered_factor2, include=TRUE}   
+tidy_income$income_bracket <- factor(tidy_income$income_bracket, levels = tidy_income$income_bracket)
+```
+
+##plot income data by religion
+```{r plot6, include=TRUE}  
+ggplot(data = tidy_income, aes(x = income_bracket, y = percentage, fill = religion))+ geom_bar(stat="identity", position="dodge") + ggtitle("Income by religion") + ylab("percentage")
+```  
+
+
+##plot income data by religion <30k
+```{r plot7, include=TRUE}  
+ggplot(data = filter(tidy_income, income_bracket %in% c("<30k")), aes(x = income_bracket, y = percentage, fill = religion))+ geom_bar(stat="identity", position="dodge") + ggtitle("Income by religion") + ylab("percentage")
+```
+
+##Historically Black Protestant has the most representation and Jewish has the least rpresentation in under 30k bracket
+
+
+##plot income data by religion 30k-49,999
+```{r plot8, include=TRUE}  
+ggplot(data = filter(tidy_income, income_bracket %in% c("30k-49,999")), aes(x = income_bracket, y = percentage, fill = religion))+ geom_bar(stat="identity", position="dodge") + ggtitle("Income by religion") + ylab("percentage")
+```
+
+##Jehovah's Witness has the most representation and Hindu has the least representaton in 30k-49,999 bracket
+
+
+##plot income data by religion 50k-99.999
+```{r plot9, include=TRUE}  
+ggplot(data = filter(tidy_income, income_bracket %in% c("50k-99.999")), aes(x = income_bracket, y = percentage, fill = religion))+ geom_bar(stat="identity", position="dodge") + ggtitle("Income by religion") + ylab("percentage")
+```
+
+##Orthodox Christian has the most representation and Historically Black Protestant has the most representation in 50k-99,99 bracket
+
+##plot income data by religion 100k+
+```{r plot10, include=TRUE}  
+ggplot(data = filter(tidy_income, income_bracket %in% c("100k+")), aes(x = income_bracket, y = percentage, fill = religion))+ geom_bar(stat="identity", position="dodge") + ggtitle("Income by religion") + ylab("percentage")
+```
+
+##Jewish has the most representation and Jehovah's Witness has the least representation in 100k+ bracket
+
+##Conclusion:In the population survayed Historically Black Protestant religious tradition followers has the least income and Jewish religious tradition follower has the most income
