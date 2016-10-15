@@ -1,0 +1,22 @@
+{"books" :[
+	{
+	"Title"        :   "The Language of SQL",
+        "Author"       :  ["Larry Rockoff"],
+	"ISBN"         :   "978-1-4354-5751-5",
+	"Publisher"    :  ["Course Technology"]
+	},
+		
+	{
+	"Title"        :   "R for Everyone Advanced Analytics and Graphics",
+        "Author"      :  ["Jared P. Lander"],
+	"ISBN"         :   "978-0-321-88803-7",
+	"Publisher"    :  ["Addison-Wesley"]
+	},
+
+	{
+	"Title"        :   "Data Science for Business",
+        "Author"      :  ["Foster Provost", "Tom Fawcett"],
+	"ISBN"         :   "978-1-449-36132-7",
+	"Publisher"    :  ["O'Reilly"]
+	}]
+}
