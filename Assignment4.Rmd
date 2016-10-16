@@ -1,0 +1,67 @@
+---
+title: "DATA 607 Week7"
+author: "Ahsanul Choudhury"
+date: "October 14, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##For this assignment I have created three files that stores information of my three current favorite books in HTML, XML and JSON formats and uploaded in github. I will then load the information from this three source as three separate data frames and at the end I will test to see if they are identical.
+
+##Install required packages
+```{r install_packages, include=TRUE}
+##install.packages("XML")
+##install.packages("RJSONIO")
+##install.packages("RCurl")
+##install.packages("plyr")
+```
+
+##Load library
+```{r load_library, include=TRUE}
+library(XML)
+library(RJSONIO)
+library(RCurl)
+library(plyr)
+```
+
+##Load HTML, XML and JSON data from Github
+```{r load_files, include=TRUE}
+html.url <- getURL("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/books.html")
+xml.url <- getURL("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/books.xml")
+json.url <- getURL("https://raw.githubusercontent.com/choudhury1023/Data-607/gh-pages/books.json")
+```
+
+##Data frame from HTML file
+```{r html_data_frame, include=TRUE}
+books.html <- readHTMLTable(html.url, head=TRUE, as.data.frame=TRUE, stringsAsFactors = FALSE)
+books.html
+```
+
+##Data frame from XML file
+```{r xml_data_frame, include=TRUE}
+books.parse <- xmlParse(xml.url)
+books.root <- xmlRoot(books.parse)
+books.xml <- xmlToDataFrame(books.root, stringsAsFactors = FALSE)
+books.xml
+```
+
+##Data frame from JSON file
+```{r json_data_frame, include=TRUE}
+raw.json <- fromJSON(json.url, simplifyVector = FALSE, as.data.frame=TRUE)
+unlist.json <- sapply(raw.json[[1]], unlist)
+books.json <- do.call("rbind.fill", lapply(lapply(unlist.json, t), data.frame, stringsAsFactors = FALSE))
+books.json
+```
+
+##Are they identical?
+```{r test, include=TRUE}
+identical(books.html, books.xml)
+identical(books.html, books.json)
+identical(books.xml, books.json)
+```
+
+##The data frames generated from HTML and XML are not identical but similar, the JSON data frame is quite diffrent. The diffrence is apparent on how the JSON data frame handles the book with multiple authors.
+
