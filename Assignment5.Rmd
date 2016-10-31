@@ -1,0 +1,91 @@
+---
+title: "DATA 607 Week 9 Assignment"
+author: "Ahsanul Choudhury"
+date: "October 28, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###Objective:
+To choose one of the New York Times APIs, construct an interface in R to read in the JSON data, and transform it to an R dataframe.
+***
+
+For my assignment I chose to work with the New York Times "Most Popular API". Under "Most Popular API" there are three sections: 
+
+-  Most Emailed by Section & Time Period
+
+-  Most Shared by Section & Time Period
+
+-  Most Viewed by Section & Time Period
+I am interested in using the *Most Viewed* section to see which Titles are most viewed today. New York Times "Most Popular API" give 20 results per page so I will use the top 20 results and plot the numeber of times each sections appears in top 20 most viewed today and for the past 7 days to get an idea of readers interest.
+
+####API Key
+The first step for this assignment was to register and get a API key from New York Times. Once the API key was received the following steps were taken to complete the assignment
+
+####Load Libraries
+```{r library, include=TRUE}
+library(jsonlite)
+library(plyr)
+library(dplyr)
+library(knitr)
+library(ggplot2)
+```
+
+####Establish connection with New York Times
+```{r load_data, include=TRUE}
+uri <- fromJSON("https://api.nytimes.com/svc/mostpopular/v2/mostviewed/all-sections/1.json?api-key=31f8d708d3d9492c906146c5a1215690")
+```
+
+
+####Create R Data Frame
+```{r create_data_frame, include=TRUE}
+df <- ldply(uri[4], data.frame)
+```
+
+
+####Get details of data frame
+```{r get_details, include=TRUE}
+length(df)
+names(df)
+```
+
+
+####Edit data frame
+```{r select_column, include=TRUE}
+MostViewed <- df %>% select(views,title, section, url, byline, type)
+head(MostViewed)
+```
+
+####Final data frame
+```{r create_table, include=TRUE}
+kable(MostViewed)
+```
+
+
+#####I wanted to see how many times each section appears in the top 20 most viewed today and in past 7 days
+
+####Section count in top 20 most viewed today
+```{r section_count, include=TRUE}
+SectionCount <- MostViewed %>%count(section)
+SectionCount
+```
+
+
+####Plot section count in top 20 most viewed today
+```{r plot_today, include=TRUE}
+ggplot(data = SectionCount, aes(x = section, y = n, fill = section))+ geom_bar(stat="identity", position="dodge") + ggtitle("Most Viewed by Section (Today)") + ylab("Frequency")+ coord_flip() + geom_text(aes(label = n))
+```
+
+####Plot section count in top 20 most viewed for the past 7 days
+```{r plot_week, include=TRUE}
+uriWeek <- fromJSON("https://api.nytimes.com/svc/mostpopular/v2/mostviewed/all-sections/7.json?api-key=31f8d708d3d9492c906146c5a1215690")
+dfWeek <- ldply(uriWeek[4], data.frame)
+SectionCountWeek <- dfWeek %>%count(section)
+ggplot(data = SectionCountWeek, aes(x = section, y = n, fill = section))+ geom_bar(stat="identity", position="dodge") + ggtitle("Most Viewed by Section(1 Week)") + ylab("Frequency")+ coord_flip() + geom_text(aes(label = n))
+```
+
+###Conclusion
+With API New York time provide an easy way to access their data. Once I was able to connect using API the JSON data is easy to manipulate with in r and there are few libraries available for that.
