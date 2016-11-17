@@ -1,0 +1,204 @@
+---
+title: "Data 607 Project 4"
+author: "Ahsanul Choudhury"
+date: "November 14, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Goal
+
+For Project 4, you should take information from a relational database and migrate it to a NoSQL database of your own choosing. 
+
+For the relational database, you might use the flights database, the tb database, the "data skills" database your team created for Project 3, or another database of your own choosing or creation.
+
+For the NoSQL database, you may use MongoDB, Neo4j (which we introduce in Week 12), or another NoSQL database of your choosing.
+
+ Your migration process needs to be reproducible.  R code is encouraged, but not required.  You should also briefly describe the advantages and disadvantages of storing the data in a relational database vs. your NoSQL database.
+ 
+* * *
+
+##Environment Setup
+
+For project 4, I will take information from MySql databse and migrate it to MongoDB and will use the filghts databse.
+
+#####Load required libraries
+
+```{r load_libraries, include=TRUE}
+library(RMySQL)
+#install.packages("mongolite")
+library(mongolite)
+```
+
+##Procedure
+
+I will complete the project in 3 steps:
+
+-   Step 1: MySql
+
+-   Step 2: MongoDB
+
+-   Step 3: Test data
+
+
+##Step 1
+
+In this step I will create a connectio with MySql, load database in r, convert the MySql tables to r data frames and finally close connection with r.
+
+#####Create connection to MySql and load databse into r
+
+```{r load_mysql_databse, include=TRUE}
+flights_mysql <- dbConnect(MySQL(), user = 'root', password = '', dbname='flights', host = 'localhost')
+```
+
+#####Get the table names from the database
+
+```{r mysql_table_list, include=TRUE}
+dbListTables(flights_mysql)
+```
+
+#####Convert MySql tables to r data frames
+
+```{r r_dataframe, include=TRUE}
+airlines_df <- "select * from airlines;"
+airlines <- dbGetQuery(flights_mysql, airlines_df)
+
+airports_df <- "select * from airports;"
+airports <- dbGetQuery(flights_mysql, airports_df)
+
+flights_df <- "select * from flights;"
+flights <- dbGetQuery(flights_mysql, flights_df)
+
+planes_df <- "select * from planes;"
+planes <- dbGetQuery(flights_mysql, planes_df)
+
+weather_df <- "select * from weather;"
+weather <- dbGetQuery(flights_mysql, weather_df)
+
+knitr::kable(head(airlines))
+knitr::kable(head(airports))
+knitr::kable(head(flights))
+knitr::kable(head(planes))
+knitr::kable(head(weather))
+```
+
+#####Close Connection with MySql
+
+```{r disconnect_mysql, include=TRUE}
+dbDisconnect(flights_mysql)
+```
+
+##Step 2
+
+In this step I will load the data frames to MongoDB and create a databse. 
+***Important: For this and following steps MongoDB sever required to run in the background.***
+
+#####MongoDB databse
+
+```{r load_to_mongo, include=TRUE}
+m_airlines  <- mongo(collection = "airlines", db= "flights", url = "mongodb://localhost")
+m_airlines$drop()
+m_airlines$insert(airlines)
+
+
+m_airports  <- mongo(collection = "airports", db= "flights", url = "mongodb://localhost")
+m_airports$drop()
+m_airports$insert(airports)
+
+
+m_flights  <- mongo(collection = "flights", db= "flights", url = "mongodb://localhost")
+m_flights$drop()
+m_flights$insert(flights)
+
+
+m_planes  <- mongo(collection = "planes", db= "flights", url = "mongodb://localhost")
+m_planes$drop()
+m_planes$insert(planes)
+
+m_weather  <- mongo(collection = "weather", db= "flights", url = "mongodb://localhost")
+m_weather$drop()
+m_weather$insert(weather)
+```
+
+##Step 3
+
+In this step I will test the data to make sure data was not compromised during the relational to NoSQL migration. I will conduct two tests, in my first test I will make sure the numbers of rows in MySql are the same as the numbers of documents in MongoDB. In my second test I will make sure both database has same dimensions and load the data from MongoBD to r and create data frames to see if they are the same as the data frames I have created in step 1 from MySql.
+
+#####Test 1
+
+```{r compare_data1, include=TRUE}
+#Numbers of documents MongoDB m_airlines in and numbers on rows in airlines data frame
+m_airlines$count()
+nrow(airlines)
+
+##Numbers of documents MongoDB in m_airports and numbers on rows in airports data frame
+m_airports$count()
+nrow(airports)
+
+#Numbers of documents MongoDB in m_flights and numbers on rows in flights data frame
+m_flights$count()
+nrow(flights)
+
+#Numbers of documents MongoDB in m_planes and numbers on rows in planes data frame
+m_planes$count()
+nrow(planes)
+
+#Numbers of documents MongoDB in m_weather and numbers on rows in weather data frame
+m_weather$count()
+nrow(weather)
+```
+
+I have exact same numbers of documents and rows for collection and table containing the same data.
+
+#####Test 2
+
+```{r compare_data2, include=TRUE}
+mongo_airlines <- m_airlines$find()
+##mongo_airlines,  airlines data frame
+dim(mongo_airlines) == dim(airlines)
+
+mongo_airports <- m_airports$find()
+##mongo_airports,  airports data frame
+dim(mongo_airports) == dim(airports)
+
+mongo_flights <- m_flights$find()
+##mongo_flights,  flights data frame
+dim(mongo_flights) == dim(flights)
+
+mongo_planes <- m_planes$find()
+##mongo_planes,  planes data frame
+dim(mongo_planes) == dim(planes)
+
+
+mongo_weather <- m_weather$find()
+##mongo_weather,  weather data frame
+dim(mongo_weather) == dim(weather)
+
+knitr::kable(head(mongo_airlines))
+knitr::kable(head(mongo_airports))
+knitr::kable(head(mongo_flights))
+knitr::kable(head(mongo_planes))
+knitr::kable(head(mongo_weather))
+```
+
+All five data frames from both MySql and MongoDB are exactly the same.
+
+##Conclusion
+From the tests above I can conclude that the migration of flights databse from MySql to MongoDB was successful.
+
+##Advantages and disadvantages of storing the data in a relational database vs MongoDB
+
+MongoDB falls under the "Document" category of NoSQL databse. It uses dynamic-schema so it is more flexible to set up. MongoDB was designed with high availability and scalability in mind. It supports replica sets which makes the secondary server primary automatically without any human intervention if the primary server goes down. MongoDB enables horizontal scalability by using a technique called sharding. Sharding distributes the data across physical partitions to overcome the hardware limitations. The data is automatically balanced in the clusters.
+
+Data size in MongoDB is usually larger due to each document has field names that stored it, it is less flexible with querying because there is no join function and it has no tansaction support.
+
+##References
+
+-    RMySql: http://svitsrv25.epfl.ch/R-doc/library/DBI/html/dbSendQuery.html
+
+-    mogolite: https://cran.r-project.org/web/packages/mongolite/mongolite.pdf
+
+-    Advantages and disadvantages: https://www.mongodb.com/compare/mongodb-mysql,   http://www.developer.com/db/mongodb-nosql-solution-advantages-and-disadvantages.html,   http://stackoverflow.com/questions/5244437/pros-and-cons-of-mongodb
