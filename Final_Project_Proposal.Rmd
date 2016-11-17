@@ -1,0 +1,23 @@
+---
+title: "DATA 607 Final Project Proposal"
+author: "Ahsanul Choudhury"
+date: "November 16, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Is climate change real or just a myth? Is it a natural phenomenon or human induced? While most scientists believe climate change is real and human induced, they are finding it difficult to make everyone believe it. A big part of world population does not believe in climate change, which includes top level legislators around the world who have the power to make positive changes. 
+
+
+Global warming is one of the key factors in climate change. Greenhouse gases trap heat in the atmosphere, which makes the Earth warmer.  For my project I will look into historical data on Earth's temperature and green house emission to see if there is a positive correlation between the two variables; Earth's average yearly temperature increase and increase in greenhouse gas emission. Finally, I will conduct a sentiment analysis on twitter data to get an idea on public opinion on the issue of climate change.
+
+
+The following data source will be used to complete this project:
+
+-   https://www.epa.gov/climate-indicators
+-   http://cait.wri.org/
+-   https://www.ncdc.noaa.gov/
+-   https://twitter.com/
